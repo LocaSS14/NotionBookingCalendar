@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Booking Calendar</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="booking-container">
+    <h1>Book an Appointment</h1>
+
+    <form id="booking-form">
+      <!-- Date Selection -->
+      <label for="appointment-date">Select a Date:</label>
+      <input type="date" id="appointment-date" name="appointment-date" required />
+
+      <!-- Time Slot Selection -->
+      <label for="time-slot">Select a Time Slot:</label>
+      <select id="time-slot" name="time-slot" required>
+        <option value="">-- Please choose a time --</option>
+        <option value="11:00">11:00 AM</option>
+        <option value="20:00">08:00 PM</option>
+      </select>
+
+      <!-- Name -->
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" placeholder="Your Name" required />
+
+      <!-- Email -->
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" placeholder="Your Email" required />
+
+      <!-- Phone -->
+      <label for="phone">Phone:</label>
+      <input type="tel" id="phone" name="phone" placeholder="Your Phone Number" required />
+
+      <!-- Submit Button -->
+      <button type="submit">Book Appointment</button>
+    </form>
+
+    <p id="result-message"></p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

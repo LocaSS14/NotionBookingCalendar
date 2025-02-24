@@ -1,0 +1,4 @@
+[build]
+  functions = "functions"  # Tells Netlify that your serverless functions live here
+
+# (Optional) You can specify other settings, but this is the minimum needed for functions.
