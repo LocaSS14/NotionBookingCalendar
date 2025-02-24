@@ -1,6 +1,6 @@
 // Replace with your actual Netlify function endpoint
 // e.g. "https://your-site.netlify.app/.netlify/functions/book-appointment"
-const NETLIFY_FUNCTION_URL = "YOUR_NETLIFY_FUNCTION_ENDPOINT";
+const NETLIFY_FUNCTION_URL = "https://app.netlify.com/sites/kaleidoscopic-valkyrie-450c6a";
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("booking-form");

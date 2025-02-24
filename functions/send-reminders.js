@@ -51,7 +51,7 @@ exports.handler = async (event, context) => {
     //    - "Date/Time" is on or before `before24ISO`
     //    - "Reminder Sent" is not checked
     const response = await notion.databases.query({
-      database_id: 'YOUR_DATABASE_ID',
+      database_id: '1a3a19df84ee804ba7d6c2ed5577d06b',
       filter: {
         and: [
           {
