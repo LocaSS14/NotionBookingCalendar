@@ -10,7 +10,6 @@
 
 # Optional: if you have a second scheduled function or environment overrides,
 # you can put them here as well.
-cify other settings, but this is the minimum needed for functions.
 
 [functions.send-reminders]
 # This tells Netlify we have a function named 'send-reminders'
