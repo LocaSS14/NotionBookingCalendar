@@ -1,4 +1,19 @@
 [build]
-  functions = "functions"  # Tells Netlify that your serverless functions live here
+  # Tell Netlify to serve the "public" folder as your website
+  publish = "public"
+  # Tell Netlify your serverless functions are in "netlify/functions"
+  functions = "functions"
 
-# (Optional) You can specify other settings, but this is the minimum needed for functions.
+  # If you need a build command, specify it here, for example:
+  # command = "npm run build" 
+  # (But if there's no build step, you can skip this)
+
+# Optional: if you have a second scheduled function or environment overrides,
+# you can put them here as well.
+cify other settings, but this is the minimum needed for functions.
+
+[functions.send-reminders]
+# This tells Netlify we have a function named 'send-reminders'
+# Now we schedule it to run hourly (or daily). For example, hourly:
+schedule = "@hourly"
+[functions.book-appointment]
