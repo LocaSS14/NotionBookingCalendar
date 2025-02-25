@@ -1,29 +1,30 @@
-// functions/book-appointment.js
+// netlify/functions/book-appointment.js
 
 const { Client } = require('@notionhq/client');
 const nodemailer = require('nodemailer');
 
-// We can optionally use dotenv if we test locally:
+// (Optional) Load .env if running locally; Netlify sets env vars in production
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
-// 1. Initialize Notion client
-const notion = new Client({ auth: process.env.NOTION_TOKEN });
+// 1. Initialize the Notion client with your token
+const notion = new Client({
+  auth: process.env.NOTION_TOKEN, // set in Netlify or your .env
+});
 
-// 2. Create a transporter for sending emails
-//    For example, using Gmail + Nodemailer
+// 2. Create an email transporter (if you're using Gmail for confirmations)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // e.g. "your.email@gmail.com"
-    pass: process.env.EMAIL_PASS, // e.g. "gmail-app-password"
+    user: process.env.EMAIL_USER,  // e.g. "your.email@gmail.com"
+    pass: process.env.EMAIL_PASS,  // e.g. "an-app-password"
   },
 });
 
-// 3. Netlify serverless function format
-exports.handler = async (event, context) => {
-  // Only allow POST requests
+// 3. The handler function (Netlify serverless format)
+exports.handler = async (event) => {
+  // Only accept POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405, // Method Not Allowed
@@ -32,13 +33,10 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Parse the incoming data (assuming JSON format)
-    const data = JSON.parse(event.body);
+    // Parse JSON input from the request body
+    const { name, email, phone, dateTime } = JSON.parse(event.body);
 
-    // Data expected from the front-end booking form
-    const { name, email, phone, dateTime } = data; 
-    // Example of dateTime: "2025-03-01T11:00:00" (ISO string or similar)
-
+    // Basic validation
     if (!name || !email || !phone || !dateTime) {
       return {
         statusCode: 400,
@@ -46,67 +44,110 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 1. Query Notion to see if dateTime is already booked:
-const existing = await notion.databases.query({
-    database_id:'1a3a19df84ee804ba7d6c2ed5577d06b'
-    ,
-    filter: {
-      and: [
-        {
-          property: 'Date/Time',
+    /**********************************************************
+     * 4. Check if the slot is already booked in Notion
+     *    - We assume your database has:
+     *      - A "Status" property using the "Status" type
+     *      - A "Date/Time" (date) property
+     **********************************************************/
+    const existing = await notion.databases.query({
+      database_id: 'YOUR_DATABASE_ID', // e.g. "1a3a19df84ee804ba7d6c2ed5577d06b"
+      filter: {
+        and: [
+          {
+            property: 'Date/Time',
+            date: {
+              equals: dateTime, // must match exactly the date/time
+            },
+          },
+          {
+            property: 'Status',
+            status: {
+              equals: 'Booked',
+            },
+          },
+        ],
+      },
+    });
+
+    if (existing.results.length > 0) {
+      // Slot is already booked
+      return {
+        statusCode: 409, // Conflict
+        body: JSON.stringify({ error: 'This slot is already booked!' }),
+      };
+    }
+
+    /**********************************************************
+     * 5. Create a new page in Notion
+     *    NOTE: We use "status: { name: 'Booked' }" for a Status property
+     **********************************************************/
+    await notion.pages.create({
+      parent: { database_id: 'YOUR_DATABASE_ID' },
+      properties: {
+        // "Name" property (title)
+        Name: {
+          title: [
+            { text: { content: name } },
+          ],
+        },
+        // "Email" property (email type) 
+        Email: {
+          email: email,
+        },
+        // "Phone" property (phone number type) 
+        Phone: {
+          phone_number: phone,
+        },
+        // "Date/Time" property (date type, must match the property name exactly)
+        'Date/Time': {
           date: {
-            equals: dateTime, 
+            start: dateTime, // must be ISO8601 date-time, e.g. "2025-03-01T11:00:00"
           },
         },
-        {
-          property: 'Status',
-          select: {
-            equals: 'Booked',
+        // "Status" property (Status type in Notion, not a Select)
+        Status: {
+          status: {
+            name: 'Booked',
           },
         },
-      ],
-    },
-  });
-  
-  // If we find any result, that means the slot is taken
-  if (existing.results.length > 0) {
-    return {
-      statusCode: 409, // Conflict
-      body: JSON.stringify({ error: 'This slot is already booked!' }),
-    };
-  }
-  
-    // 5. Send a confirmation email to the customer
-    const mailOptionsToCustomer = {
+      },
+    });
+
+    /**********************************************************
+     * 6. Send Confirmation Emails (Optional)
+     *    - Email to the customer
+     *    - Email to yourself (if desired)
+     **********************************************************/
+    // Email to customer
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: 'Appointment Confirmation',
       text: `Hello ${name},\n\nYour appointment has been booked for ${dateTime}.\n\nThank you!`,
-    };
+    });
 
-    await transporter.sendMail(mailOptionsToCustomer);
+    // (Optional) Email yourself
+    // await transporter.sendMail({
+    //   from: process.env.EMAIL_USER,
+    //   to: process.env.EMAIL_USER, 
+    //   subject: 'New Appointment Booked',
+    //   text: `A new appointment was booked by ${name} (${email}, ${phone}) for ${dateTime}.`,
+    // });
 
-    // 6. Send a notification email to yourself (the consultant)
-    const mailOptionsToYou = {
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER, // or another email if you prefer
-      subject: 'New Appointment Booked',
-      text: `A new appointment was booked by ${name} (${email}, ${phone}) for ${dateTime}.`,
-    };
-
-    await transporter.sendMail(mailOptionsToYou);
-
-    // 7. Return a success response
+    // 7. Return success response
     return {
       statusCode: 200,
       body: JSON.stringify({ message: 'Appointment booked successfully!' }),
     };
-
   } catch (error) {
     console.error('Booking Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error', details: error.toString() }),
+      body: JSON.stringify({
+        error: 'Internal Server Error',
+        details: error.toString(),
+      }),
     };
   }
 };

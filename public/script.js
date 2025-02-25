@@ -2,6 +2,10 @@
 // e.g. "https://your-site.netlify.app/.netlify/functions/book-appointment"
 const NETLIFY_FUNCTION_URL = "https://notion-booking-app.netlify.app/.netlify/functions/book-appointment";
 
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("booking-form");
   const resultEl = document.getElementById("result-message");
